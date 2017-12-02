@@ -23,7 +23,7 @@ function c32841045.initial_effect(c)
 	local e3=Effect.CreateEffect(c)
 	e3:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
 	e3:SetCode(EVENT_CHAIN_SOLVING)
-	e3:SetProperty(EFFECT_FLAG_DELAY)
+	e3:SetProperty(EFFECT_FLAG_DELAY+EFFECT_FLAG_SET_AVAILABLE)
 	e3:SetRange(LOCATION_MZONE)
 	e3:SetOperation(c32841045.regop)
 	c:RegisterEffect(e3)
@@ -40,6 +40,7 @@ function c32841045.initial_effect(c)
 	e3:SetLabelObject(e4)
 	local e5=Effect.CreateEffect(c)
 	e5:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+	e5:SetProperty(EFFECT_FLAG_SET_AVAILABLE)
 	e5:SetCode(EVENT_ADJUST)
 	e5:SetRange(LOCATION_MZONE)
 	e5:SetOperation(c32841045.regop2)
@@ -52,7 +53,7 @@ function c32841045.thfilter(c,g)
 	return c:IsSetCard(0x108) and c:IsAbleToHand() and not g:IsExists(Card.IsCode,1,nil,c:GetCode())
 end
 function c32841045.thtg(e,tp,eg,ep,ev,re,r,rp,chk)
-	if chk==0 then return true end
+	if chk==0 then return not re or re==e:GetLabelObject() end
 	Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)
 end
 function c32841045.thop(e,tp,eg,ep,ev,re,r,rp)
@@ -66,6 +67,10 @@ end
 function c32841045.regop(e,tp,eg,ep,ev,re,r,rp)
 	local c=e:GetHandler()
 	local rc=re:GetHandler()
+	if c:IsFacedown() then
+		SameColumnChain[e:GetLabelObject()]=nil
+		return
+	end
 	if Duel.GetCurrentPhase()&PHASE_DAMAGE+PHASE_DAMAGE_CAL~=0 or not re:IsHasType(EFFECT_TYPE_ACTIVATE) or c:GetFlagEffect(1)<=0 
 		or not e:GetLabelObject():IsActivatable(tp) then return end
 	local p,loc,seq=Duel.GetChainInfo(ev,CHAININFO_TRIGGERING_CONTROLER,CHAININFO_TRIGGERING_LOCATION,CHAININFO_TRIGGERING_SEQUENCE)
@@ -90,7 +95,7 @@ function c32841045.regop2(e,tp,eg,ep,ev,re,r,rp)
 	local te=e:GetLabelObject()
 	if c:GetFlagEffect(32841046)==0 and e:GetLabel()==1 then
 		e:SetLabel(0)
-		if Duel.IsExistingMatchingCard(c32841045.thfilter,tp,LOCATION_DECK,0,1,nil,SameColumnChain[te]) and Duel.SelectEffectYesNo(tp,c) then
+		if SameColumnChain[te] and Duel.IsExistingMatchingCard(c32841045.thfilter,tp,LOCATION_DECK,0,1,nil,SameColumnChain[te]) and Duel.SelectEffectYesNo(tp,c) then
 			Duel.RaiseEvent(SameColumnChain[te],EVENT_CUSTOM+32841045,e,REASON_EFFECT,rp,ep,ev)
 		end
 		SameColumnChain[te]=nil
